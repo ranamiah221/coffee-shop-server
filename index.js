@@ -1,6 +1,6 @@
-const express=require('express')
-const cors=require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const express = require('express')
+const cors = require('cors')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -26,17 +26,53 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-   const coffeeCollection = client.db("coffeeShopDB").collection("coffees");
-   
-    app.get('/coffees', async(req, res)=>{
+    const coffeeCollection = client.db("coffeeShopDB").collection("coffees");
+
+    app.get('/coffees', async (req, res) => {
       const cursor = await coffeeCollection.find().toArray();
       res.send(cursor)
     })
+    app.get('/coffees/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await coffeeCollection.findOne(query)
+      res.send(result)
+    })
+    app.get('/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await coffeeCollection.findOne(query)
+      res.send(result)
+    })
 
-    app.post('/coffees', async(req, res)=>{
-      const newCoffee=req.body
+    app.post('/coffees', async (req, res) => {
+      const newCoffee = req.body
       console.log(newCoffee);
-      const result= await coffeeCollection.insertOne(newCoffee)
+      const result = await coffeeCollection.insertOne(newCoffee)
+      res.send(result)
+    })
+    app.delete('/coffees/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await coffeeCollection.deleteOne(query)
+      res.send(result)
+    })
+    app.put('/coffees/:id', async (req, res) => {
+      const id = req.params.id;
+      const updateCoffee = req.body;
+      const options = { upsert: true }
+      const filter = { _id: new ObjectId(id) }
+      const coffee = {
+        $set: {
+          name:updateCoffee.name,
+          chef:updateCoffee.chef,
+          supplier:updateCoffee.supplier,
+          taste:updateCoffee.taste,
+          category:updateCoffee.category,
+          detail:updateCoffee.detail,
+        }
+      }
+      const result = await coffeeCollection.updateOne(filter, coffee, options)
       res.send(result)
     })
 
@@ -53,9 +89,9 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.get('/',(req, res)=>{
-    res.send('Coffee server on');
+app.get('/', (req, res) => {
+  res.send('Coffee server on');
 })
-app.listen(port, ()=>{
-    console.log(`coffee server running port: ${port}`)
+app.listen(port, () => {
+  console.log(`coffee server running port: ${port}`)
 })
